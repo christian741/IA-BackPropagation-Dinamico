@@ -1,12 +1,14 @@
 %-----------------------------------------------------
 %       Asignacion Manual de entradas neuronas y salidas
 %------------------------------------------------------
-CantidadEntradas = 2;
-CantidadSalidas = 1;
+CantidadEntradas = 3;
 CantidadOcultas = 2;
+CantidadSalidas = 2;
 
 
-Alpha = 0.0001;%Coeficiente de aprendizaje
+
+%Alpha = 0.0001;%Coeficiente de aprendizaje
+Alpha = 0.25;
 %------------------------------------------
 %               UMBRALES
 %------------------------------------------
@@ -28,7 +30,15 @@ end
 for i = 1:CantidadSalidas
     UmbralSalidas(i) = 1;
 end
+%------------------------------------------
+%               BIAS
+%------------------------------------------
 
+BiasOcultas= 0.5;
+BiasSalidas = 0.5;
+
+%BiasOcultas= 0;
+%BiasSalidas = 0;
 %------------------------------------------
 %          CAPA DE ENTRADA
 %------------------------------------------
@@ -48,6 +58,7 @@ ySalida= [CantidadSalidas];%Salidas
 %
 %                   ERROR
 %
+
 DeltaErrorSalida = [CantidadSalidas];%Salidas
 
 
@@ -77,12 +88,19 @@ SalidaDeseada = [CantidadSalidas];
 %-----------------------------------------
 ErrorPatron = 0;
 ErrorReal =0; %Error de toda la red
+ErrorDefinido = 0.000000001;
 %----------------------------------------
 %           INTEGRACION MANUAL
 %-----------------------------------------
-Entradas(1) = 1.5;
-Entradas(2) = 1.2;
-SalidaDeseada (1) =0.58778666;
+Entradas(1) = 1;
+Entradas(2) = 4;
+Entradas(3) = 5;
+% Entradas(1) = 0;
+% Entradas(2) = 1;
+%SalidaDeseada (1) =0.58778666;
+% SalidaDeseada (1) =1;
+SalidaDeseada (1) =0.1;
+SalidaDeseada (2) =0.05;
 
 %-------------------------------------------------------
 %               PESOS
@@ -90,14 +108,18 @@ SalidaDeseada (1) =0.58778666;
 %
 %     Pesos Randomicos de acuerdo a entradas
 %
+pesosOculta = [0.1,0.2,0.3,0.4,0.5,0.6];
+pesosSalida = [0.7,0.8,0.9,0.1];
+%pesosOculta = [0.1,0.5,-0.7,0.3];
+%pesosSalida = [0.2,0.4];
 for i = 1:CantidadPesoEntrada
-    PesosEntrada(i) = randi([1 100],1,1)/100;
+    PesosEntrada(i) = pesosOculta(i);
 end
 %
 %     Pesos Randomicos de acuerdo a Salidas
 %
 for i = 1:CantidadPesoSalida
-    PesosSalida(i) = randi([1 100],1,1)/100;
+    PesosSalida(i) = pesosSalida(i);
 end
 
 %**********************************************************************************************
@@ -105,103 +127,71 @@ end
 %**********************************************************************************************
 par= 2;
 total =0;
+entrenar = false;
 %**************************************************
-%Buscar Cantidad Ocultas para asignar NETS OCULTAS
+%                       NETS OCULTAS
+% Entrada a capa oculta
+% w_1x_1+w_3x_2+w_5x_3+b_1=z_{h_1}
+% 
+% w_2x_1+w_4x_2+w_6x_3+b_1=z_{h_2}
+% 
+% h_1=\sigma(z_{h_1})
+% 
+% h_2=\sigma(z_{h_2})
 %**************************************************
+disp("%-------------------------------");
+disp("%           NetsOcultas         ");
+disp("%-------------------------------");
 for i = 1:CantidadOcultas
-    %Mirar si es par o Impar la Neurona y Realizar La Funcion Sigmoide
-    modulo = mod(i,par);
+    
     NETs(i) = 0;
-    if(modulo == 0)
-        %Es par
-        total =0;
-        valor = MultiParForward(CantidadPesoEntrada,PesosEntrada,CantidadEntradas,Entradas);
-        total = valor +UmbralOcultas(i);
-        valor =0;
-    else
-        %Es impar
-        total =0;
-        valor = MultiImparForward(CantidadPesoEntrada,PesosEntrada,CantidadEntradas,Entradas);
-        total = valor +UmbralOcultas(i);
-        valor =0;
-    end
+    total = 0;
     %Nets de todas las neuronas capa oculta
-    NETs(i)=total;
+    NETs(i)=NetsOcultas(CantidadOcultas,CantidadPesoEntrada,PesosEntrada,CantidadEntradas,Entradas,i,BiasOcultas);
     %*******************************************
     %Forward yNeuronas
-    yNeuronas(i) = Forward(NETs(i));
+    total = total+ NETs(i);
+    NETs(i) = total;
+    disp("NetsOcultas "+NETs(i));
+    yNeuronas(i) = Sigmoideal(NETs(i));
+    disp("YNeuronasOcultas "+yNeuronas(i));
     
-  
 end
-disp("ENTRADA  "+ " | Cantidad Entradas "+ length(Entradas) + " | Pesos Entradas "+ length(PesosEntrada) );
-disp("--");
-disp("OCULTAS | UmbralOcultas "+ length(UmbralOcultas) +" | NETS Ocultos "+ length(NETs)+ " | Yneuronas "+ length(yNeuronas) );
-disp("--");
-disp("Salida  "+ " | Cantidad Entradas "+ length(Salidas) + " | Pesos Salidas "+ length(PesosSalida) );
-    
-%**************************************************
-%               NETS SALIDA
-%**************************************************
-for i=1:CantidadSalidas
-    modulo = mod(i,par);
+%-------------------------------------------------
+%           NETS de Salida
+%-------------------------------------------------
+disp("%-------------------------------");
+disp("%           NETS de Salida         ");
+disp("%-------------------------------");
+for i = 1:CantidadOcultas
     NETsalida(i) = 0;
-    if(modulo == 0)
-        %Es par
-        total =0;
-        valor = MultiParForwardSalida(CantidadPesoSalida,PesosSalida,CantidadSalidas,yNeuronas);
-        total = valor +UmbralSalidas(i);
-        valor =0;
-    else
-        %Es impar
-        total =0;
-        valor = MultiImparForwardSalida(CantidadPesoSalida,PesosSalida,CantidadSalidas,yNeuronas);
-        total = valor +UmbralSalidas(i);
-        valor =0;
-    end
+    total = 0;
+    %Nets de todas las neuronas capa oculta
+    NETsalida(i)=NetsSalida(CantidadSalidas,CantidadPesoSalida,PesosSalida,CantidadOcultas,yNeuronas,i,BiasSalidas)
+    %*******************************************
+    %Forward yNeuronas
+    total = total+ NETsalida(i);
     NETsalida(i)=total;
-    ySalida(i) = Forward(NETsalida(i));
+    disp("NetsSalida "+NETsalida(i));
+    ySalida(i) = Sigmoideal(NETsalida(i));
+    disp("YNeuronasSalida "+yNeuronas(i));
+    
 end
 %***********************************************************
 %          CALCULO ERRORES DE DELTA SALIDA BACKPROPAGATION
 %***********************************************************
 
-for i=1;CantidadSalidas;
-    VectorAuxiliar = [];
-    VectorAuxiliar2 = [];
-    
+for i=1:CantidadSalidas;
+        
     DeltaErrorSalida(i)= (SalidaDeseada(i)-ySalida(i))*ySalida(i)*(1-ySalida(i));
+    disp("DeltaErrorSalida "+DeltaErrorSalida(i));
 end
-
 %***********************************************************
 %          ERRORES DE DELTA ESTIMADOS
 %***********************************************************
 
 
 
-%     for k=1:CantidadSalidas %1
-%         for j=1:CantidadPesoSalida %2
-%             valor = Entradas(j)*(1-Entradas(j));
-%             total = total + valor *(DeltaErrorSalida(k)*UmbralOcultas(j));
-%         end
-%     end
-%     DeltaErroresOculta(i) = total;
-% valores =[];
-% totalErrorParcial = ParcialError(DeltaErrorSalida);
-% valores (j) = Entradas(j)*(1-Entradas(j))*totalErrorParcial;
-% DeltaErroresOculta(i,j)=[i,valores(j)];
-for i=1;CantidadPesoEntrada
-    hecho =false;
-    j= 0;
-    while hecho==false && j<CantidadPesoEntrada
-        j=1;
-        vectorAE =[];
-        for k=1:CantidadEntradas
-            vectorAE(k) = Entradas(k)*(1-Entradas(k));
-        end
-        vectorPS(j) = ParcialError(DeltaErrorSalida);
-        j=j+1;
-    end
-end
 
 
 
@@ -217,136 +207,71 @@ end
 
 
 
-
-
-
-
-
-
-%%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-%                                         BACK ERRORES
-%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-function vectorPS = ParcialError (DeltaErrorSalida)
-    valor =0;
-    total =0;
-    vectorPS = [];
-    for j=1:CantidadPesoSalida%2
-        for i=1;CantidadSalidas%1
-            vectorPS(j) = DeltaErrorSalida(i)* PesosSalida(j);
-        end
-    end
-end
-
-
-
-%%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-%                                         FORWARD SALIDAS
-%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%*************************************************************************************
+%*************************************************************************************
+%*************************************************************************************
+%                           FUNCIONES
+%*************************************************************************************
+%*************************************************************************************
+%*************************************************************************************
 %-------------------------------
-%           MitplicarImparSalidas
+%           NetsSalida
 %-------------------------------
-function valor = MultiImparForwardSalida(CantidadPesoSalida,PesosSalida,CantidadSalidas,yNeuronas)
-    
-    vectAuxiliarIP = [];%Pesos Impares
-    vactAuxiliarE = [];%Entradas
-    valorAuxiliar = 0;
-    valor =0;
-    for i=1:CantidadPesoSalida
-        if(mod(i,2)~=0) 
-        vectAuxiliarIP(i)=PesosSalida(i);
-        end
-    end
-    for i=1:length(yNeuronas)
-        vectAuxiliarE(i)=yNeuronas(i);
-    end
-    for i=1:CantidadSalidas
-        valorAuxiliar = vectAuxiliarIP(i)*vectAuxiliarE(i);
-        valor = valor+valorAuxiliar;
-    end
+function valor = NetsSalida(CantidadSalidas,CantidadPesoSalida,PesosSalida,CantidadOcultas,yNeuronas,indice,BiasSalidas)
+
+acumulador= 0;
+valor= 0;
+vectorAuxiliar=[];
+iteracion = 1;
+iteracionAux = 1;
+for i=indice:CantidadSalidas:CantidadPesoSalida
+    vectorAuxiliar(iteracionAux) =  PesosSalida(i);
+    %disp("vector auxiliar "+vectorAuxiliar(iteracionAux) + "itearacionAux " +iteracionAux);
+    iteracionAux = iteracionAux+1;
     
 end
-
-
-%-------------------------------
-%           MitplicarParSalida
-%-------------------------------
-function valor = MultiParForwardSalida(CantidadPesoSalida,PesosSalida,CantidadSalidas,yNeuronas)
+for j=1:CantidadSalidas%
     
-      vectAuxiliarIP = [];%Pesos Impares
-    vactAuxiliarE = [];%Entradas
-    valorAuxiliar = 0;
-    valor =0;
-    for i=1:CantidadPesoSalida
-        if(mod(i,2)==0)
-        vectAuxiliarIP(i)=PesosSalida(i);
-        end
-    end
-    for i=1:CantidadSalidas
-        vectAuxiliarE(i)=yNeuronas(i);
-    end
-    for i=1:CantidadSalidas
-        valorAuxiliar = vectAuxiliarIP(i)*vectAuxiliarE(i);
-        valor = valor+valorAuxiliar;
-    end
+    acumulador = yNeuronas(j)*vectorAuxiliar(iteracion);
     
+    disp("i= "+iteracion+" j= "+j+ " ´´´´´´´´´´"+ yNeuronas(j)+ " * "+vectorAuxiliar(iteracion));
+    iteracion=iteracion+1;
+    valor = valor+acumulador;
+    disp("Valor es "+valor);
 end
-%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-%                                         FORWARD OCULTAS
-%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-%-------------------------------
-%           MitplicarImpar
-%-------------------------------
-function valor = MultiImparForward(CantidadPesoEntrada,PesosEntrada,CantidadEntradas,Entradas)
-    
-    vectAuxiliarIP = [];%Pesos Impares
-    vactAuxiliarE = [];%Entradas
-    valorAuxiliar = 0;
-    valor =0;
-    for i=1:CantidadPesoEntrada
-        if(mod(i,2)~=0)
-        vectAuxiliarIP(i)=PesosEntrada(i);
-        end
-    end
-    for i=1:CantidadEntradas
-        vectAuxiliarE(i)=Entradas(i);
-    end
-    for i=1:CantidadEntradas
-        
-        valorAuxiliar = vectAuxiliarIP(i)*vectAuxiliarE(i);
-        valor = valor+valorAuxiliar;
-        
-    end
-    
-end
-
-
-%-------------------------------
-%           MitplicarPar
-%-------------------------------
-function valor = MultiParForward(CantidadPesoEntrada,PesosEntrada,CantidadEntradas,Entradas)
-    
-    vectAuxiliarP = [];%Pesos Pares
-    vactAuxiliarE = [];%Entradas
-    valorAuxiliar = 0;
-    valor =0;
-    for i=1:CantidadPesoEntrada
-        if(mod(i,2)==0)
-        vectAuxiliarP(i)=PesosEntrada(i);
-        end
-    end
-    for i=1:CantidadEntradas
-        vectAuxiliarE(i)=Entradas(i);
-    end
-    for i=1:CantidadEntradas
-        valorAuxiliar = vectAuxiliarP(i)*vectAuxiliarE(i);
-        valor = valor+valorAuxiliar;
-    end
-    
+    valor = valor+BiasSalidas;
 end
 %-------------------------------
-%       FORWARD
+%           NetsOcultas
 %-------------------------------
-function y = Forward(net)
+function valor = NetsOcultas(CantidadOcultas,CantidadPesoEntrada,PesosEntrada,CantidadEntradas,Entradas,indice,BiasOcultas)
+
+acumulador= 0;
+valor= 0;
+vectorAuxiliar=[];
+iteracion = 1;
+iteracionAux = 1;
+for i=indice:CantidadOcultas:CantidadPesoEntrada
+    vectorAuxiliar(iteracionAux) =  PesosEntrada(i);
+%     disp("vector auxiliar "+vectorAuxiliar(iteracionAux) + "itearacionAux " +iteracionAux);
+    iteracionAux = iteracionAux+1;
+    
+end
+for j=1:CantidadEntradas%
+    
+    acumulador = Entradas(j)*vectorAuxiliar(iteracion);
+    
+    disp("i= "+iteracion+" j= "+j+ " ´´´´´´´´´´"+ Entradas(j)+ " * "+vectorAuxiliar(iteracion));
+    iteracion=iteracion+1;
+    valor = valor+acumulador;
+%     disp("Valor es "+valor);
+end
+valor = valor +BiasOcultas;
+end
+%-------------------------------
+%       Sigmoideal
+%-------------------------------
+function y = Sigmoideal(net)
     euler=2.71828;
     y = 1/(1+(euler^(-1*net)));
 end
